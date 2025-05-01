@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 # Menu de navegação
 pagina = st.sidebar.radio(
@@ -22,29 +23,49 @@ if pagina == "com recurso":
 
     df1 = load_data()
 
-    print(df1.columns)
+    #print(df1.columns)
+
+    data_atual = datetime.now().date()
+
+    if 'INÍCIO DA VIGÊNCIA' in df1.columns and 'FIM DA VIGÊNCIA' in df1.columns:
+        df1_vigencia = df1[(df1['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
+        total_vigencia = df1_vigencia.shape[0]
+
+    if 'FIM DA VIGÊNCIA' in df1.columns:
+        df1_fimV = df1[df1['FIM DA VIGÊNCIA'].dt.date < data_atual]
+        total_fimV = df1_fimV.shape[0]
+
+    #grafico
+    st.title("Gráfico")
+
+
+    # Nomes e dados
+    labels = ['em vigencia', 'finalizados']
+    values = [total_vigencia, total_fimV]
+
+    # Gera o gráfico se os valores forem maiores que zero
+    if sum(values) > 0:
+        fig, ax = plt.subplots()
+        ax.pie(values, labels=labels, autopct='%1.1f%%')
+        ax.axis('equal')  # Deixa o gráfico redondo
+        st.pyplot(fig)
+
+
 
     status_vigencia = st.selectbox(
         "Filtrar por vigência:",
         options=["Todos", "Em vigência", "Vencidos"]
     )
 
-    data_atual = datetime.now().date()
 
     if status_vigencia == "Em vigência":
-        if 'INÍCIO DA VIGÊNCIA' in df1.columns and 'FIM DA VIGÊNCIA' in df1.columns:
-            df1_filtrado = df1[(df1['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
-            total = df1_filtrado.shape[0]
-        else:
-            total = 0
-            df1_filtrado = pd.DataFrame()
+        st.markdown(f"## Total de convênios ({status_vigencia}): **{total_vigencia}**")
+        st.dataframe(df1_vigencia)
+
     elif status_vigencia == "Vencidos":
-        if 'FIM DA VIGÊNCIA' in df1.columns:
-            df1_filtrado = df1[df1['FIM DA VIGÊNCIA'].dt.date < data_atual]
-            total = df1_filtrado.shape[0]
-        else:
-            total = 0
-            df1_filtrado = pd.DataFrame()
+        st.markdown(f"## Total de convênios ({status_vigencia}): **{total_fimV}**")
+        st.dataframe(df1_fimV)
+ 
     else:
         df1_filtrado = df1
         total = df1.shape[0]
