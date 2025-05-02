@@ -216,7 +216,7 @@ elif pagina == "home":
 
         
         #grafico
-        #apresentar o valor total de projetos com e sem repasse
+        #apresentar o valor total de projetos com e sem repasses
         st.title("Convênios vigentes")
         
 
