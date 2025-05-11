@@ -65,13 +65,39 @@ if pagina == "com recurso":
         st.dataframe(df1_fimV)
 
     elif filtro == "Ano":
-        ano_selecionado = st.selectbox('Selecione o ano', df1['ANO'].dropna().unique())
-        df1_ano = df1[df1['ANO'] == ano_selecionado]
-        st.write(f"Dados do ano {ano_selecionado}:", df1_ano)
+        ano_selecionado = st.selectbox('Selecione o ano', sorted(df1['ANO'].dropna().unique(), reverse=True))
 
-        acordos_por_ano = df1['ANO'].value_counts().reset_index()
-        acordos_por_ano.columns = ['ANO', 'Quantidade de Acordos']
-        st.dataframe(acordos_por_ano)
+        #tabla com os contratos iniciados no ano selecioando
+        df1_ano = df1[df1['ANO'] == ano_selecionado]
+        st.markdown(f"### Dados do ano {ano_selecionado}:")
+        st.dataframe(df1_ano)
+
+        # Contratos iniciados no ano (coluna ANO)
+        total_iniciados_ano = df1_ano.shape[0]
+
+        # FIM DA VIGÊNCIA no ano selecionado
+        df1_vencidos_ano = df1[df1['FIM DA VIGÊNCIA'].dt.year == ano_selecionado]
+        total_vencidos_ano = df1_vencidos_ano.shape[0]
+
+        # Contratos vigentes hoje E que abrangem o ano selecionado
+        df1_vigentes_no_ano = df1[
+            (df1['INÍCIO DA VIGÊNCIA'].dt.year <= ano_selecionado) &
+            (df1['FIM DA VIGÊNCIA'].dt.year >= ano_selecionado) &
+            (df1['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) &
+            (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)
+        ]
+        total_vigentes_no_ano = df1_vigentes_no_ano.shape[0]
+
+
+        #tabela resumo
+        resumo_df = pd.DataFrame({
+            'Status': ['Vigentes', 'Vencidos no ano', 'Iniciados no ano'],
+            'Quantidade': [total_vigentes_no_ano, total_vencidos_ano, total_iniciados_ano]
+        })
+        st.markdown(f"### Resumo do ano {ano_selecionado}:")
+        st.dataframe(resumo_df)
+
+
 
     elif filtro == "Finalidade":
         st.markdown("🛠️ Em construção")
@@ -81,10 +107,10 @@ if pagina == "com recurso":
         st.markdown(f"## Total: **{total}**")
         st.dataframe(df1)
 
-        st.title("Convênios")
-        st.markdown(f"### Em vigência: **{total_vigencia}**")
-        st.markdown(f"### Vencidos: **{total_fimV}**")
-        grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
+        #st.title("Convênios")
+        #st.markdown(f"### Em vigência: **{total_vigencia}**")
+        #st.markdown(f"### Vencidos: **{total_fimV}**")
+        #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
 
         st.markdown("## Total anual")
         acordos_por_ano = df1['ANO'].value_counts().reset_index()
@@ -99,6 +125,7 @@ if pagina == "com recurso":
         ax.set_ylabel('Quantidade')
         plt.xticks(rotation=45)
         st.pyplot(fig)
+    
 
 # Página "sem recurso"
 elif pagina == "sem recurso":
