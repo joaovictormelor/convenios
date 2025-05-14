@@ -131,29 +131,89 @@ if pagina == "com recurso":
 elif pagina == "sem recurso":
     st.title("Sem Recursos 📉")
     df2 = tratar_datas(load_dataSR())
-
-    df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df2['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
+    df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
     df2_fimV = df2[df2['FIM DA VIGÊNCIA'].dt.date < data_atual]
     total_vigencia = df2_vigencia.shape[0]
     total_fimV = df2_fimV.shape[0]
 
-    st.title("Gráfico")
-    grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
+    filtro = st.selectbox("Filtrar:", ["Todos", "Em vigência", "Vencidos", "Ano", "Finalidade"])
 
-    status_vigencia = st.selectbox("Filtrar por vigência:", ["Todos", "Em vigência", "Vencidos"])
-
-    if status_vigencia == "Em vigência":
+    if filtro == "Em vigência":
         st.markdown(f"## Total: **{total_vigencia}**")
-        st.dataframe(df2_vigencia)
+        st.dataframe(df1_vigencia)
 
-    elif status_vigencia == "Vencidos":
+    elif filtro == "Vencidos":
         st.markdown(f"## Total: **{total_fimV}**")
-        st.dataframe(df2_fimV)
+        st.dataframe(df1_fimV)
+
+    elif filtro == "Ano":
+        ano_selecionado = st.selectbox('Selecione o ano', sorted(df2['ANO'].dropna().unique(), reverse=True))
+
+        #tabla com os contratos iniciados no ano selecioando
+        df2_ano = df2[df2['ANO'] == ano_selecionado]
+        st.markdown(f"### Dados do ano {ano_selecionado}:")
+        st.dataframe(df2_ano)
+
+        # Contratos iniciados no ano (coluna ANO)
+        total_iniciados_ano = df2_ano.shape[0]
+
+        # FIM DA VIGÊNCIA no ano selecionado
+        df2_vencidos_ano = df2[df2['FIM DA VIGÊNCIA'].dt.year == ano_selecionado]
+        total_vencidos_ano = df2_vencidos_ano.shape[0]
+
+        # Contratos vigentes hoje E que abrangem o ano selecionado
+        df2_vigentes_no_ano = df2[
+            (df2['INÍCIO DA VIGÊNCIA'].dt.year <= ano_selecionado) &
+            (df2['FIM DA VIGÊNCIA'].dt.year >= ano_selecionado) &
+            (df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) &
+            (df2['FIM DA VIGÊNCIA'].dt.date >= data_atual)
+        ]
+        total_vigentes_no_ano = df2_vigentes_no_ano.shape[0]
+
+
+        #tabela resumo
+        resumo_df = pd.DataFrame({
+            'Status': ['Vigentes', 'Vencidos no ano', 'Iniciados no ano'],
+            'Quantidade': [total_vigentes_no_ano, total_vencidos_ano, total_iniciados_ano]
+        })
+        st.markdown(f"### Resumo do ano {ano_selecionado}:")
+        st.dataframe(resumo_df)
+
+    elif filtro == "Finalidade":
+        st.markdown("🛠️ Em construção")
 
     else:
-        total = df2.shape[0]
+        total = df1.shape[0]
         st.markdown(f"## Total: **{total}**")
-        st.dataframe(df2)
+        st.dataframe(df1)
+
+        #st.title("Convênios")
+        #st.markdown(f"### Em vigência: **{total_vigencia}**")
+        #st.markdown(f"### Vencidos: **{total_fimV}**")
+        #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
+
+        st.markdown("## Total anual")
+        acordos_por_ano = df1['ANO'].value_counts().reset_index()
+        acordos_por_ano.columns = ['ANO', 'Quantidade de Acordos']
+        acordos_por_ano = acordos_por_ano.sort_values(by='ANO', ascending=False)
+        st.dataframe(acordos_por_ano)
+
+        fig, ax = plt.subplots()
+        ax.bar(acordos_por_ano['ANO'].astype(str), acordos_por_ano['Quantidade de Acordos'])
+        ax.set_title('Quantidade de Acordos por Ano')
+        ax.set_xlabel('Ano')
+        ax.set_ylabel('Quantidade')
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
+
+
+
+
+
+
+
+
+
 
 # Página "home"
 elif pagina == "home":
