@@ -131,7 +131,7 @@ if pagina == "com recurso":
 elif pagina == "sem recurso":
     st.title("Sem Recursos 📉")
     df2 = tratar_datas(load_dataSR())
-    df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
+    df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df2['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
     df2_fimV = df2[df2['FIM DA VIGÊNCIA'].dt.date < data_atual]
     total_vigencia = df2_vigencia.shape[0]
     total_fimV = df2_fimV.shape[0]
@@ -140,17 +140,17 @@ elif pagina == "sem recurso":
 
     if filtro == "Em vigência":
         st.markdown(f"## Total: **{total_vigencia}**")
-        st.dataframe(df1_vigencia)
+        st.dataframe(df2_vigencia)
 
     elif filtro == "Vencidos":
         st.markdown(f"## Total: **{total_fimV}**")
-        st.dataframe(df1_fimV)
+        st.dataframe(df2_fimV)
 
     elif filtro == "Ano":
-        ano_selecionado = st.selectbox('Selecione o ano', sorted(df2['ANO'].dropna().unique(), reverse=True))
+        ano_selecionado = st.selectbox('Selecione o ano', sorted(df2['Ano'].dropna().unique(), reverse=True))
 
         #tabla com os contratos iniciados no ano selecioando
-        df2_ano = df2[df2['ANO'] == ano_selecionado]
+        df2_ano = df2[df2['Ano'] == ano_selecionado]
         st.markdown(f"### Dados do ano {ano_selecionado}:")
         st.dataframe(df2_ano)
 
@@ -183,9 +183,9 @@ elif pagina == "sem recurso":
         st.markdown("🛠️ Em construção")
 
     else:
-        total = df1.shape[0]
+        total = df2.shape[0]
         st.markdown(f"## Total: **{total}**")
-        st.dataframe(df1)
+        st.dataframe(df2)
 
         #st.title("Convênios")
         #st.markdown(f"### Em vigência: **{total_vigencia}**")
@@ -193,7 +193,7 @@ elif pagina == "sem recurso":
         #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
 
         st.markdown("## Total anual")
-        acordos_por_ano = df1['ANO'].value_counts().reset_index()
+        acordos_por_ano = df2['Ano'].value_counts().reset_index()
         acordos_por_ano.columns = ['ANO', 'Quantidade de Acordos']
         acordos_por_ano = acordos_por_ano.sort_values(by='ANO', ascending=False)
         st.dataframe(acordos_por_ano)
