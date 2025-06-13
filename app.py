@@ -20,14 +20,14 @@ pagina = st.sidebar.radio(
 # Funções para carregamento dos dados e armazenamene em cache
 @st.cache_data
 def load_dataCR():
-    url = "https://docs.google.com/spreadsheets/d/1lKmtydv3EFVuZ-ddTqKqrJNb59KaQ4GL/export?format=csv&gid=385902901"
+    url = "https://docs.google.com/spreadsheets/d/1WyWOO_JqN44h2suO69nBSmuklV8DQka6/export?format=csv&gid=385902901"
     df = pd.read_csv(url, engine='python', header=1)
     df.columns = df.columns.str.strip()
     return df
 
 @st.cache_data
 def load_dataSR():
-    url = "https://docs.google.com/spreadsheets/d/1lKmtydv3EFVuZ-ddTqKqrJNb59KaQ4GL/export?format=xlsx&gid=765747999"
+    url = "https://docs.google.com/spreadsheets/d/1WyWOO_JqN44h2suO69nBSmuklV8DQka6/export?format=xlsx&gid=765747999"
     df = pd.read_excel(url, engine="openpyxl", header=0)
     df.columns = df.columns.str.strip()
     return df
@@ -46,7 +46,7 @@ def grafico_pizza(labels, values, titulo):
 
 # Página "com recurso"
 if pagina == "com recurso":
-    st.title("Com Recursos 📈")
+    st.title("Com Recursos")
     df1 = tratar_datas(load_dataCR())
 
     df1_vigencia = df1[(df1['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
@@ -129,7 +129,7 @@ if pagina == "com recurso":
 
 # Página "sem recurso"
 elif pagina == "sem recurso":
-    st.title("Sem Recursos 📉")
+    st.title("Sem Recursos")
     df2 = tratar_datas(load_dataSR())
     df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df2['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
     df2_fimV = df2[df2['FIM DA VIGÊNCIA'].dt.date < data_atual]
