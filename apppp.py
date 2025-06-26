@@ -70,7 +70,7 @@ if pagina == "com recurso":
         #tabla com os contratos iniciados no ano selecioando
         df1_ano = df1[df1['ANO'] == ano_selecionado]
         st.markdown(f"### Dados do ano {ano_selecionado}:")
-        st.dataframe(df1_ano)
+        st.dataframe(df1_ano[['ANO','FINALIDADE', 'CONTRATO/CONVÊNIO', 'FONTE RECURSO', 'PARTES', 'PROCESSO', 'PROJETO', 'VALOR GERAL', 'NOME COORDENADOR', 'INÍCIO DA VIGÊNCIA', 'FIM DA VIGÊNCIA']], hide_index=True)
 
         # Contratos iniciados no ano (coluna ANO)
         total_iniciados_ano = df1_ano.shape[0]
@@ -205,14 +205,6 @@ elif pagina == "sem recurso":
         ax.set_ylabel('Quantidade')
         plt.xticks(rotation=45)
         st.pyplot(fig)
-
-
-
-
-
-
-
-
 
 
 # Página "home"
