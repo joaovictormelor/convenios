@@ -6,15 +6,20 @@ import matplotlib.pyplot as plt
 # Data atual
 data_atual = datetime.now().date()
 
+# Função para carregar o CSS de um arquivo externo
+def load_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+# Carrega o CSS personalizado
+load_css("style.css")
+
+
 # Menu de navegação
 pagina = st.sidebar.radio(
     "Selecione o tipo de convênio:",
     ["home", "com recurso", "sem recurso"]
 )
-
-
-#if st.button("🔄 Atualizar dados"):
- #   st.cache_data.clear()
 
 
 # Funções para carregamento dos dados e armazenamene em cache
@@ -39,14 +44,18 @@ def tratar_datas(df):
 
 def grafico_pizza(labels, values, titulo):
     st.markdown(f"### {titulo}")
-    fig, ax = plt.subplots()
-    ax.pie(values, labels=labels, autopct='%1.1f%%')
+    # A facecolor do plot será um branco suave para contrastar com o novo fundo da página
+    fig, ax = plt.subplots(facecolor='#F5F5F5') 
+    # Definindo cores mais atraentes para o gráfico de pizza
+    colors = ['#4CAF50', '#FFC107', '#2196F3', '#FF5722', '#9C27B0']
+    ax.pie(values, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors[:len(labels)],
+            textprops={'color': '#333333'}) # Cor do texto da porcentagem
     ax.axis('equal')
     st.pyplot(fig)
 
 # Página "com recurso"
 if pagina == "com recurso":
-    st.title("Com Recursos")
+    st.title("Convênios com Recurso") # Adicionei um emoji de dinheiro
     df1 = tratar_datas(load_dataCR())
 
     df1_vigencia = df1[(df1['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
@@ -54,32 +63,36 @@ if pagina == "com recurso":
     total_vigencia = df1_vigencia.shape[0]
     total_fimV = df1_fimV.shape[0]
 
-    filtro = st.selectbox("Filtrar:", ["Todos", "Em vigência", "Vencidos", "Ano", "Finalidade"])
+    # Usando st.columns para melhor layout dos totais
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Em Vigência", value=total_vigencia, delta_color="normal")
+    with col2:
+        st.metric(label="Vencidos", value=total_fimV, delta_color="inverse")
+
+    st.markdown("---") # Linha divisória
+
+    filtro = st.selectbox("Filtrar dados:", ["Todos", "Em vigência", "Vencidos", "Ano", "Finalidade"])
 
     if filtro == "Em vigência":
-        st.markdown(f"## Total: **{total_vigencia}**")
-        st.dataframe(df1_vigencia)
+        st.markdown(f"### Detalhes: Em Vigência")
+        st.dataframe(df1_vigencia, use_container_width=True) # Ocupa a largura total do contêiner
 
     elif filtro == "Vencidos":
-        st.markdown(f"## Total: **{total_fimV}**")
-        st.dataframe(df1_fimV)
+        st.markdown(f"### Detalhes: Vencidos")
+        st.dataframe(df1_fimV, use_container_width=True)
 
     elif filtro == "Ano":
-        ano_selecionado = st.selectbox('Selecione o ano', sorted(df1['ANO'].dropna().unique(), reverse=True))
+        ano_selecionado = st.selectbox('Selecione o Ano', sorted(df1['ANO'].dropna().unique(), reverse=True))
 
-        #tabla com os contratos iniciados no ano selecioando
         df1_ano = df1[df1['ANO'] == ano_selecionado]
-        st.markdown(f"### Dados do ano {ano_selecionado}:")
-        st.dataframe(df1_ano)
+        st.markdown(f"### Dados do Ano {ano_selecionado}:")
+        st.dataframe(df1_ano, use_container_width=True)
 
-        # Contratos iniciados no ano (coluna ANO)
         total_iniciados_ano = df1_ano.shape[0]
-
-        # FIM DA VIGÊNCIA no ano selecionado
         df1_vencidos_ano = df1[df1['FIM DA VIGÊNCIA'].dt.year == ano_selecionado]
         total_vencidos_ano = df1_vencidos_ano.shape[0]
 
-        # Contratos vigentes hoje E que abrangem o ano selecionado
         df1_vigentes_no_ano = df1[
             (df1['INÍCIO DA VIGÊNCIA'].dt.year <= ano_selecionado) &
             (df1['FIM DA VIGÊNCIA'].dt.year >= ano_selecionado) &
@@ -88,80 +101,81 @@ if pagina == "com recurso":
         ]
         total_vigentes_no_ano = df1_vigentes_no_ano.shape[0]
 
-
-        #tabela resumo
         resumo_df = pd.DataFrame({
-            'Status': ['Vigentes', 'Vencidos no ano', 'Iniciados no ano'],
+            'Status': ['Vigentes', 'Vencidos no Ano', 'Iniciados no Ano'],
             'Quantidade': [total_vigentes_no_ano, total_vencidos_ano, total_iniciados_ano]
         })
-        st.markdown(f"### Resumo do ano {ano_selecionado}:")
-        st.dataframe(resumo_df)
-
+        st.markdown(f"### Resumo do Ano {ano_selecionado}:")
+        st.dataframe(resumo_df, use_container_width=True)
 
 
     elif filtro == "Finalidade":
-        st.markdown("🛠️ Em construção")
+        st.info("filtro 'finalidade' a ver") # Use st.info para mensagens
+        # Para futura implementação de finalidade, você poderia fazer algo como:
+        # finalidade_selecionada = st.selectbox('Selecione a Finalidade', df1['FINALIDADE'].dropna().unique())
+        # df1_finalidade = df1[df1['FINALIDADE'] == finalidade_selecionada]
+        # st.dataframe(df1_finalidade)
 
-    else:
+
+    else: # Filtro "Todos"
         total = df1.shape[0]
-        st.markdown(f"## Total: **{total}**")
-        st.dataframe(df1)
+        st.markdown(f"### Todos os Convênios")
+        st.dataframe(df1, use_container_width=True)
 
-        #st.title("Convênios")
-        #st.markdown(f"### Em vigência: **{total_vigencia}**")
-        #st.markdown(f"### Vencidos: **{total_fimV}**")
-        #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
-
-        st.markdown("## Total anual")
+        st.markdown("## Distribuição Anual")
         acordos_por_ano = df1['ANO'].value_counts().reset_index()
         acordos_por_ano.columns = ['ANO', 'Quantidade de Acordos']
         acordos_por_ano = acordos_por_ano.sort_values(by='ANO', ascending=False)
-        st.dataframe(acordos_por_ano)
+        st.dataframe(acordos_por_ano, use_container_width=True)
 
-        fig, ax = plt.subplots()
-        ax.bar(acordos_por_ano['ANO'].astype(str), acordos_por_ano['Quantidade de Acordos'])
-        ax.set_title('Quantidade de Acordos por Ano')
-        ax.set_xlabel('Ano')
-        ax.set_ylabel('Quantidade')
-        plt.xticks(rotation=45)
+        fig, ax = plt.subplots(facecolor='#E0E0E0') # Cor de fundo do gráfico combinando com o fundo da página
+        ax.bar(acordos_por_ano['ANO'].astype(str), acordos_por_ano['Quantidade de Acordos'], color='#00796B') # Cor para as barras
+        ax.set_title('Quantidade de Acordos por Ano', color='#333333')
+        ax.set_xlabel('Ano', color='#333333')
+        ax.set_ylabel('Quantidade', color='#333333')
+        plt.xticks(rotation=45, color='#333333')
+        plt.yticks(color='#333333')
         st.pyplot(fig)
-    
+
 
 # Página "sem recurso"
 elif pagina == "sem recurso":
-    st.title("Sem Recursos")
+    st.title("Convênios sem Recurso") # Adicionei um emoji de nota
     df2 = tratar_datas(load_dataSR())
     df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df2['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
     df2_fimV = df2[df2['FIM DA VIGÊNCIA'].dt.date < data_atual]
     total_vigencia = df2_vigencia.shape[0]
     total_fimV = df2_fimV.shape[0]
 
-    filtro = st.selectbox("Filtrar:", ["Todos", "Em vigência", "Vencidos", "Ano", "Finalidade"])
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Em Vigência", value=total_vigencia, delta_color="normal")
+    with col2:
+        st.metric(label="Vencidos", value=total_fimV, delta_color="inverse")
+
+    st.markdown("---")
+
+    filtro = st.selectbox("Filtrar dados:", ["Todos", "Em vigência", "Vencidos", "Ano", "Finalidade"])
 
     if filtro == "Em vigência":
-        st.markdown(f"## Total: **{total_vigencia}**")
-        st.dataframe(df2_vigencia)
+        st.markdown(f"### Detalhes: Em Vigência")
+        st.dataframe(df2_vigencia, use_container_width=True)
 
     elif filtro == "Vencidos":
-        st.markdown(f"## Total: **{total_fimV}**")
-        st.dataframe(df2_fimV)
+        st.markdown(f"### Detalhes: Vencidos")
+        st.dataframe(df2_fimV, use_container_width=True)
 
     elif filtro == "Ano":
-        ano_selecionado = st.selectbox('Selecione o ano', sorted(df2['Ano'].dropna().unique(), reverse=True))
+        ano_selecionado = st.selectbox('Selecione o Ano', sorted(df2['Ano'].dropna().unique(), reverse=True))
 
-        #tabla com os contratos iniciados no ano selecioando
         df2_ano = df2[df2['Ano'] == ano_selecionado]
-        st.markdown(f"### Dados do ano {ano_selecionado}:")
-        st.dataframe(df2_ano)
+        st.markdown(f"### Dados do Ano {ano_selecionado}:")
+        st.dataframe(df2_ano, use_container_width=True)
 
-        # Contratos iniciados no ano (coluna ANO)
         total_iniciados_ano = df2_ano.shape[0]
-
-        # FIM DA VIGÊNCIA no ano selecionado
         df2_vencidos_ano = df2[df2['FIM DA VIGÊNCIA'].dt.year == ano_selecionado]
         total_vencidos_ano = df2_vencidos_ano.shape[0]
 
-        # Contratos vigentes hoje E que abrangem o ano selecionado
         df2_vigentes_no_ano = df2[
             (df2['INÍCIO DA VIGÊNCIA'].dt.year <= ano_selecionado) &
             (df2['FIM DA VIGÊNCIA'].dt.year >= ano_selecionado) &
@@ -170,54 +184,46 @@ elif pagina == "sem recurso":
         ]
         total_vigentes_no_ano = df2_vigentes_no_ano.shape[0]
 
-
-        #tabela resumo
         resumo_df = pd.DataFrame({
-            'Status': ['Vigentes', 'Vencidos no ano', 'Iniciados no ano'],
+            'Status': ['Vigentes', 'Vencidos no Ano', 'Iniciados no Ano'],
             'Quantidade': [total_vigentes_no_ano, total_vencidos_ano, total_iniciados_ano]
         })
-        st.markdown(f"### Resumo do ano {ano_selecionado}:")
-        st.dataframe(resumo_df)
+        st.markdown(f"### Resumo do Ano {ano_selecionado}:")
+        st.dataframe(resumo_df, use_container_width=True)
 
     elif filtro == "Finalidade":
-        st.markdown("🛠️ Em construção")
+        st.info("🛠️ Funcionalidade 'Finalidade' em construção. Volte em breve!") # Use st.info para mensagens
+        # Para futura implementação de finalidade, você poderia fazer algo como:
+        # finalidade_selecionada = st.selectbox('Selecione a Finalidade', df2['FINALIDADE'].dropna().unique())
+        # df2_finalidade = df2[df2['FINALIDADE'] == finalidade_selecionada]
+        # st.dataframe(df2_finalidade)
 
-    else:
+    else: # Filtro "Todos"
         total = df2.shape[0]
-        st.markdown(f"## Total: **{total}**")
-        st.dataframe(df2)
+        st.markdown(f"### Todos os Convênios")
+        st.dataframe(df2, use_container_width=True)
 
-        #st.title("Convênios")
-        #st.markdown(f"### Em vigência: **{total_vigencia}**")
-        #st.markdown(f"### Vencidos: **{total_fimV}**")
-        #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
-
-        st.markdown("## Total anual")
+        st.markdown("## Distribuição Anual")
         acordos_por_ano = df2['Ano'].value_counts().reset_index()
         acordos_por_ano.columns = ['ANO', 'Quantidade de Acordos']
         acordos_por_ano = acordos_por_ano.sort_values(by='ANO', ascending=False)
-        st.dataframe(acordos_por_ano)
+        st.dataframe(acordos_por_ano, use_container_width=True)
 
-        fig, ax = plt.subplots()
-        ax.bar(acordos_por_ano['ANO'].astype(str), acordos_por_ano['Quantidade de Acordos'])
-        ax.set_title('Quantidade de Acordos por Ano')
-        ax.set_xlabel('Ano')
-        ax.set_ylabel('Quantidade')
-        plt.xticks(rotation=45)
+        fig, ax = plt.subplots(facecolor='#E0E0E0') # Cor de fundo do gráfico combinando com o fundo da página
+        ax.bar(acordos_por_ano['ANO'].astype(str), acordos_por_ano['Quantidade de Acordos'], color='#FF8F00') # Outra cor para sem recurso
+        ax.set_title('Quantidade de Acordos por Ano', color='#333333')
+        ax.set_xlabel('Ano', color='#333333')
+        ax.set_ylabel('Quantidade', color='#333333')
+        plt.xticks(rotation=45, color='#333333')
+        plt.yticks(color='#333333')
         st.pyplot(fig)
-
-
-
-
-
-
-
-
 
 
 # Página "home"
 elif pagina == "home":
-    st.markdown("Acesse a barra lateral para ver mais dados")
+    st.title("Visualização de convênios")
+    st.markdown("Use a barra lateral à esquerda para navegar entre os tipos de convênio e explorar os dados.")
+
     df1 = tratar_datas(load_dataCR())
     df2 = tratar_datas(load_dataSR())
 
@@ -226,7 +232,14 @@ elif pagina == "home":
     total_vigenciaCR = df1_vigencia.shape[0]
     total_vigenciaSR = df2_vigencia.shape[0]
 
-    st.title("Convênios vigentes")
-    st.markdown(f"### Com repasse: **{total_vigenciaCR}**")
-    st.markdown(f"### Sem repasse: **{total_vigenciaSR}**")
-    grafico_pizza(['com repasse', 'sem repasse'], [total_vigenciaCR, total_vigenciaSR], "")
+    st.markdown("---")
+    st.header("Visão Geral de Convênios Vigentes")
+    colA, colB = st.columns(2)
+    with colA:
+        st.metric(label="Convênios com Recurso (Vigentes)", value=total_vigenciaCR, delta_color="normal")
+    with colB:
+        st.metric(label="Convênios sem Recurso (Vigentes)", value=total_vigenciaSR, delta_color="normal")
+
+    st.markdown("### Distribuição dos Convênios Vigentes por Tipo")
+    grafico_pizza(['Com Recurso', 'Sem Recurso'], [total_vigenciaCR, total_vigenciaSR], "")
+
