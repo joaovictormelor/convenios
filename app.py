@@ -140,7 +140,7 @@ elif pagina == "Sem recurso":
 
     elif filtro == "Vencidos":
         st.markdown(f"## Total: **{total_fimV}**")
-        st.dataframe(df2_fimV)
+        st.dataframe(df2_fimV[["Ano", "ACORDO/\nCONVÊNIO", "PARTES", "PROCESSO", "TITULO", "NOME \nCOORDENADOR", "Situação", "INÍCIO DA VIGÊNCIA", "FIM DA VIGÊNCIA"]], hide_index=True)
 
     elif filtro == "Ano":
         ano_selecionado = st.selectbox('Selecione o ano', sorted(df2['Ano'].dropna().unique(), reverse=True))
@@ -148,7 +148,7 @@ elif pagina == "Sem recurso":
         #tabla com os contratos iniciados no ano selecioando
         df2_ano = df2[df2['Ano'] == ano_selecionado]
         st.markdown(f"### Dados do ano {ano_selecionado}:")
-        st.dataframe(df2_ano)
+        st.dataframe(df2_ano[["Ano", "ACORDO/\nCONVÊNIO", "PARTES", "PROCESSO", "TITULO", "NOME \nCOORDENADOR", "Situação", "INÍCIO DA VIGÊNCIA", "FIM DA VIGÊNCIA"]], hide_index=True)
 
         # Contratos iniciados no ano (coluna ANO)
         total_iniciados_ano = df2_ano.shape[0]
@@ -181,26 +181,14 @@ elif pagina == "Sem recurso":
     else:
         total = df2.shape[0]
         st.markdown(f"## Total: **{total}**")
-        st.dataframe(df2)
+        st.dataframe(df2[["Ano", "ACORDO/\nCONVÊNIO", "PARTES", "PROCESSO", "TITULO", "NOME \nCOORDENADOR", "Situação", "INÍCIO DA VIGÊNCIA", "FIM DA VIGÊNCIA"]], hide_index=True)
 
-        #st.title("Convênios")
-        #st.markdown(f"### Em vigência: **{total_vigencia}**")
-        #st.markdown(f"### Vencidos: **{total_fimV}**")
-        #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
 
         st.markdown("## Total anual")
         acordos_por_ano = df2['Ano'].value_counts().reset_index()
         acordos_por_ano.columns = ['ANO', 'Quantidade de Acordos']
         acordos_por_ano = acordos_por_ano.sort_values(by='ANO', ascending=False)
-        st.dataframe(acordos_por_ano)
-
-        fig, ax = plt.subplots()
-        ax.bar(acordos_por_ano['ANO'].astype(str), acordos_por_ano['Quantidade de Acordos'])
-        ax.set_title('Quantidade de Acordos por Ano')
-        ax.set_xlabel('Ano')
-        ax.set_ylabel('Quantidade')
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
+        st.dataframe(acordos_por_ano, hide_index=True)
 
 
 # Página "home"
@@ -217,7 +205,6 @@ elif pagina == "Início":
     st.title("Convênios vigentes")
     st.markdown(f"### Com repasse: **{total_vigenciaCR}**")
     st.markdown(f"### Sem repasse: **{total_vigenciaSR}**")
-    grafico_pizza(['com repasse', 'sem repasse'], [total_vigenciaCR, total_vigenciaSR], "")
 
 
 # Página TED
