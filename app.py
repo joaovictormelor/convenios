@@ -32,22 +32,18 @@ def load_dataSR():
     df = pd.read_excel(url, engine="openpyxl", header=0)
     df.columns = df.columns.str.strip()
     condicao = df['Situação'].str.strip().str.lower() == 'celebrado'
-
     df_filtrado = df[condicao.fillna(False)]
 
     return df_filtrado
+
+# Carregando a planilha TED
+file_id = "1KLmqRbECQwOUvOpU3v60PKWQsfVrpmau5yDKcVkOXMw"
+url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv&gid=0"
 
 def tratar_datas(df):
     df['INÍCIO DA VIGÊNCIA'] = pd.to_datetime(df['INÍCIO DA VIGÊNCIA'], format='%d/%m/%Y', errors='coerce')
     df['FIM DA VIGÊNCIA'] = pd.to_datetime(df['FIM DA VIGÊNCIA'], format='%d/%m/%Y', errors='coerce')
     return df
-
-def grafico_pizza(labels, values, titulo):
-    st.markdown(f"### {titulo}")
-    fig, ax = plt.subplots()
-    ax.pie(values, labels=labels, autopct='%1.1f%%')
-    ax.axis('equal')
-    st.pyplot(fig)
 
 # Página "com recurso"
 if pagina == "Com recurso":
@@ -96,7 +92,7 @@ if pagina == "Com recurso":
 
         #tabela resumo do ano
         resumo_df = pd.DataFrame({
-            'Status': ['Vigentes', 'Vencidos no ano', 'Iniciados no ano'],
+            'Status': ['Atualmente vigentes', 'Vencidos no ano', 'Iniciados no ano'],
             'Quantidade': [total_vigentes_no_ano, total_vencidos_ano, total_iniciados_ano]
         })
         st.markdown(f"### Resumo do ano {ano_selecionado}:")
@@ -169,7 +165,7 @@ elif pagina == "Sem recurso":
 
         #tabela resumo
         resumo_df = pd.DataFrame({
-            'Status': ['Vigentes', 'Vencidos no ano', 'Iniciados no ano'],
+            'Status': ['Atualmente Vigentes', 'Vencidos no ano', 'Celebrados no ano'],
             'Quantidade': [total_vigentes_no_ano, total_vencidos_ano, total_iniciados_ano]
         })
         st.markdown(f"### Resumo do ano {ano_selecionado}:")
@@ -209,4 +205,68 @@ elif pagina == "Início":
 
 # Página TED
 elif pagina == "TED":
-    st.markdown("ted aq. trazer o app ted ja feito  pra ca")
+
+    # Título do aplicativo
+    st.title("Acompanhamento de TEDs UFT")
+
+    # Carregar e processar os dados
+    df = pd.read_csv(url, header=2, nrows=86)
+    df.columns = df.columns.str.replace('\n', ' ', regex=True).str.replace('  ', ' ').str.strip()
+
+    # Conversão de datas
+    df['INÍCIO DA VIGÊNCIA'] = pd.to_datetime(df['INÍCIO DA VIGÊNCIA'], errors='coerce', dayfirst=True)
+    df['FIM DA VIGÊNCIA'] = pd.to_datetime(df['FIM DA VIGÊNCIA'], errors='coerce', dayfirst=True)
+    df['DATA FINAL PARA ENCAMINHAMENTO'] = pd.to_datetime(df['DATA FINAL PARA ENCAMINHAMENTO'], errors='coerce', dayfirst=True)
+
+    # Data atual
+    current_date = datetime.now()
+
+    # Cálculos de contagem
+    teds_firmados_total = df[df['INÍCIO DA VIGÊNCIA'].notna()].shape[0]
+    teds_finalizados_total = df[df['FIM DA VIGÊNCIA'] < current_date].shape[0]
+    teds_vigentes_total = df[df['FIM DA VIGÊNCIA'] >= current_date].shape[0]
+    teds_vigentes_calculado = teds_firmados_total - teds_finalizados_total
+
+    # Exibir resumo das contagens
+    st.subheader("Resumo das Contagens")
+    st.write(f"Total de TEDs Firmados: {teds_firmados_total}")
+    st.write(f"Total de TEDs Finalizados: {teds_finalizados_total}")
+    st.write(f"Total de TEDs Vigentes: {teds_vigentes_calculado}")
+    # st.write(f"Total de TEDs Vigentes (diretamente contado): {teds_vigentes_total}")
+
+    # Contagem de TEDs por ano
+    firmados_por_ano = df['INÍCIO DA VIGÊNCIA'].dt.year.value_counts().sort_index()
+    finalizados_por_ano = df[df['FIM DA VIGÊNCIA'] < current_date]['FIM DA VIGÊNCIA'].dt.year.value_counts().sort_index()
+    tabela_ano = pd.DataFrame({
+        "Ano": firmados_por_ano.index.astype(str),
+        "TEDs Firmados": firmados_por_ano.values,
+        "TEDs Finalizados": finalizados_por_ano.reindex(firmados_por_ano.index, fill_value=0).values
+    })
+    tabela_ano = tabela_ano.sort_values(by="Ano", ascending=False)
+    st.subheader("TEDs por Ano")
+    st.dataframe(tabela_ano, hide_index=True)
+
+    # Status atual de TEDs
+    teds_prestacao_contas = df[(df['FIM DA VIGÊNCIA'] < current_date) & 
+                            (df['DATA FINAL PARA ENCAMINHAMENTO'] > current_date)].shape[0]
+    tabela_status = pd.DataFrame({
+     "Status": ["TEDs Vigentes", "TEDs no Período de Prestação"],
+    "Quantidade": [
+        teds_vigentes_total,  # Quantidade de TEDs vigentes (supondo que esta já esteja correta)
+        # Use a contagem correta aqui:
+        df[(df['SITUAÇÃO DO ENCAMINHAMENTO'] == 'Fazer prestação de contas')].shape[0]]
+    })
+    st.subheader("Status Atual de TEDs")
+    st.dataframe(tabela_status, hide_index=True)
+
+    # Filtrar TEDs no período de prestação de contas e selecionar as colunas específicas
+    teds_prestacao_contas_lista = df[
+        df['SITUAÇÃO DO ENCAMINHAMENTO'] == 'Fazer prestação de contas'
+    ][['TED/ANO', 'DATA FINAL PARA ENCAMINHAMENTO', 'TÍTULO/OBJETO']]
+
+    # Converter a coluna 'DATA FINAL PARA ENCAMINHAMENTO' para o padrão brasileiro
+    teds_prestacao_contas_lista['DATA FINAL PARA ENCAMINHAMENTO'] = teds_prestacao_contas_lista['DATA FINAL PARA ENCAMINHAMENTO'].dt.strftime('%d/%m/%Y')
+
+    # Exibir a lista no Streamlit
+    st.subheader("TEDs no Período de Prestação de Contas")
+    st.dataframe(teds_prestacao_contas_lista, hide_index=True)
