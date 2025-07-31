@@ -9,7 +9,7 @@ data_atual = datetime.now().date()
 # Menu de navegação
 pagina = st.sidebar.radio(
     "Selecione o tipo de convênio:",
-    ["Início", "TED", "Com recurso", "Sem recurso"]
+    ["Início", "TED", "Convênios com recurso", "Convênios sem recurso"]
 )
 
 
@@ -36,6 +36,10 @@ def load_dataSR():
 # Carregando a planilha TED
 file_id = "1KLmqRbECQwOUvOpU3v60PKWQsfVrpmau5yDKcVkOXMw"
 url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv&gid=0"
+# Carregar e processar os dados
+df = pd.read_csv(url, header=2)
+df.columns = df.columns.str.replace('\n', ' ', regex=True).str.replace('  ', ' ').str.strip()
+
 
 def tratar_datas(df):
     df['INÍCIO DA VIGÊNCIA'] = pd.to_datetime(df['INÍCIO DA VIGÊNCIA'], format='%d/%m/%Y', errors='coerce')
@@ -43,8 +47,8 @@ def tratar_datas(df):
     return df
 
 # Página "com recurso"
-if pagina == "Com recurso":
-    st.title("Com Recursos")
+if pagina == "Convênios com recurso":
+    st.title("Convênios com Recursos")
     df1 = tratar_datas(load_dataCR())
 
     df1_vigencia = df1[(df1['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df1['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
@@ -105,10 +109,6 @@ if pagina == "Com recurso":
         st.markdown(f"## Total: **{total}**")
         st.dataframe(df1[['ANO','FINALIDADE', 'CONTRATO/\nCONVÊNIO', 'PARTES', 'PROCESSO', 'PROJETO', 'VALOR GERAL', 'NOME \nCOORDENADOR', 'INÍCIO DA VIGÊNCIA', 'FIM DA VIGÊNCIA']], hide_index=True)
 
-        #st.title("Convênios")
-        #st.markdown(f"### Em vigência: **{total_vigencia}**")
-        #st.markdown(f"### Vencidos: **{total_fimV}**")
-        #grafico_pizza(['em vigência', 'vencidos'], [total_vigencia, total_fimV], "Distribuição")
 
         st.markdown("## Total anual")
         acordos_por_ano = df1['ANO'].value_counts().reset_index()
@@ -117,15 +117,15 @@ if pagina == "Com recurso":
         st.dataframe(acordos_por_ano, hide_index=True)
 
 # Página "sem recurso"
-elif pagina == "Sem recurso":
-    st.title("Sem Recursos")
+elif pagina == "Convênios sem recurso":
+    st.title("Convênios sem Recursos")
     df2 = tratar_datas(load_dataSR())
     df2_vigencia = df2[(df2['INÍCIO DA VIGÊNCIA'].dt.date <= data_atual) & (df2['FIM DA VIGÊNCIA'].dt.date >= data_atual)]
     df2_fimV = df2[df2['FIM DA VIGÊNCIA'].dt.date < data_atual]
     total_vigencia = df2_vigencia.shape[0]
     total_fimV = df2_fimV.shape[0]
 
-    filtro = st.selectbox("Filtrar:", ["Todos", "Em vigência", "Vencidos", "Ano", "Finalidade"])
+    filtro = st.selectbox("Filtrar:", ["Em vigência", "Todos", "Vencidos", "Ano", "Finalidade"])
 
     if filtro == "Em vigência":
         st.markdown(f"## Total: **{total_vigencia}**")
@@ -186,7 +186,7 @@ elif pagina == "Sem recurso":
 
 # Página "home"
 elif pagina == "Início":
-    st.markdown("Acesse a barra lateral para ver mais dados")
+    #st.markdown("Acesse a barra lateral para ver mais dados")
     df1 = tratar_datas(load_dataCR())
     df2 = tratar_datas(load_dataSR())
 
@@ -195,9 +195,18 @@ elif pagina == "Início":
     total_vigenciaCR = df1_vigencia.shape[0]
     total_vigenciaSR = df2_vigencia.shape[0]
 
-    st.title("Convênios vigentes")
-    st.markdown(f"### Com repasse: **{total_vigenciaCR}**")
-    st.markdown(f"### Sem repasse: **{total_vigenciaSR}**")
+    st.title("Resumo")
+
+    df['FIM DA VIGÊNCIA'] = pd.to_datetime(df['FIM DA VIGÊNCIA'], errors='coerce', dayfirst=True)
+    current_date = datetime.now()
+    teds_vigentes_total = df[df['FIM DA VIGÊNCIA'] >= current_date].shape[0]
+
+    st.write(f"### Convênios vigentes")
+    st.write(f"Com repasse: **{total_vigenciaCR}**")
+    st.write(f"Sem repasse: **{total_vigenciaSR}**")
+
+    st.write(f"### TEDs")
+    st.write(f"Total de TEDs Vigentes: {teds_vigentes_total}")
 
 
 # Página TED
@@ -205,10 +214,6 @@ elif pagina == "TED":
 
     # Título do aplicativo
     st.title("Acompanhamento de TEDs UFT")
-
-    # Carregar e processar os dados
-    df = pd.read_csv(url, header=2)
-    df.columns = df.columns.str.replace('\n', ' ', regex=True).str.replace('  ', ' ').str.strip()
 
     # Conversão de datas
     df['INÍCIO DA VIGÊNCIA'] = pd.to_datetime(df['INÍCIO DA VIGÊNCIA'], errors='coerce', dayfirst=True)
