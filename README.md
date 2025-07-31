@@ -1,4 +1,6 @@
-visualização dos dados de convenios com e sem recursos
+visualização dos dados dos TEDs e convênios com e sem recurso.
+
+
 
 para rodar localmente é necessário instalar as bibliotecas:
 
@@ -9,5 +11,5 @@ $pip install matplotlib
 $pip install openpyxl
 
 
-iniciar a aplicação:
+para iniciar a aplicação:
 $streamlit run app.py
